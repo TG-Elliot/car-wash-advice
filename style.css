@@ -4,7 +4,7 @@
   padding: 0;
 }
 
-/* БАЗОВЫЙ ФОН, потом меняем классами weather-* */
+/* ===== ДИНАМИЧНЫЙ ФОН (градиент) ===== */
 
 body {
   min-height: 100vh;
@@ -14,35 +14,121 @@ body {
   justify-content: center;
   color: #e5e7eb;
   padding: 16px;
-  transition: background 0.6s ease, background-position 8s linear;
-  background-size: 200% 200%;
+
+  background-size: 260% 260%;
+  background-position: 0% 0%;
+  transition: background 0.6s ease;
 }
 
 /* Солнечно */
 body.weather-clear {
-  background-image: radial-gradient(circle at top, #1d4ed8, #020617 60%);
-  animation: skyMove 20s linear infinite;
+  background-image: radial-gradient(circle at top, #38bdf8, #0f172a 40%, #020617 80%);
+  animation: clearMove 14s linear infinite;
 }
 
 /* Облачно */
 body.weather-cloudy {
-  background-image: radial-gradient(circle at top, #4b5563, #020617 60%);
-  animation: skyMove 25s linear infinite;
+  background-image: radial-gradient(circle at top, #6b7280, #020617 60%);
+  animation: cloudyMove 16s linear infinite;
 }
 
 /* Дождь */
 body.weather-rain {
-  background-image: radial-gradient(circle at top, #0f172a, #020617 60%);
-  animation: rainMove 18s linear infinite;
+  background-image: linear-gradient(160deg, #020617, #0f172a 40%, #111827 80%);
+  animation: rainMove 10s linear infinite;
 }
 
 /* Снег */
 body.weather-snow {
-  background-image: radial-gradient(circle at top, #e5e7eb, #111827 60%);
+  background-image: radial-gradient(circle at top, #e5e7eb, #9ca3af 40%, #020617 85%);
   animation: snowMove 18s linear infinite;
 }
 
-/* Контейнер приложения */
+/* ===== СЛОЙ С ЭФФЕКТАМИ ПОГОДЫ (снежинки/дождь/солнце/облака) ===== */
+
+.weather-effects {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Солнце */
+
+.sun {
+  position: absolute;
+  top: 6vh;
+  right: 8vw;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #facc15, #f97316 60%, #ea580c 80%);
+  box-shadow: 0 0 40px rgba(250, 204, 21, 0.8);
+  animation: sunPulse 4s ease-in-out infinite;
+}
+
+/* Облака */
+
+.cloud {
+  position: absolute;
+  top: 8vh;
+  width: 180px;
+  height: 60px;
+  background: rgba(148, 163, 184, 0.65);
+  border-radius: 40px;
+  filter: blur(2px);
+  animation: cloudMove 28s linear infinite;
+}
+
+.cloud::before,
+.cloud::after {
+  content: "";
+  position: absolute;
+  background: inherit;
+  width: 120px;
+  height: 70px;
+  border-radius: 999px;
+  top: -30px;
+}
+
+.cloud::before {
+  left: 10px;
+}
+
+.cloud::after {
+  right: 10px;
+}
+
+/* Снежинки */
+
+.snowflake {
+  position: absolute;
+  top: -10vh;
+  color: #e5e7eb;
+  opacity: 0.9;
+  font-size: 10px;
+  animation-name: snowFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* Капли дождя */
+
+.raindrop {
+  position: absolute;
+  top: -10vh;
+  width: 2px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.85);
+  box-shadow: 0 0 6px rgba(148, 163, 184, 0.9);
+  animation-name: rainFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* Контент поверх эффектов */
 
 .app {
   width: 100%;
@@ -53,6 +139,8 @@ body.weather-snow {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(20px);
   animation: fadeInUp 0.4s ease-out;
+  position: relative;
+  z-index: 1;
 }
 
 .header {
@@ -307,7 +395,7 @@ body.weather-snow {
   color: #e5e7eb;
 }
 
-/* Анимации */
+/* ===== АНИМАЦИИ ===== */
 
 @keyframes fadeInUp {
   from {
@@ -349,23 +437,38 @@ body.weather-snow {
   }
 }
 
-/* Движение фона */
+/* движение градиента */
 
-@keyframes skyMove {
+@keyframes clearMove {
   0% {
     background-position: 0% 0%;
   }
+  50% {
+    background-position: 100% 50%;
+  }
   100% {
-    background-position: 100% 100%;
+    background-position: 0% 100%;
+  }
+}
+
+@keyframes cloudyMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
 @keyframes rainMove {
   0% {
-    background-position: 0% 0%;
+    background-position: 50% 0%;
   }
   100% {
-    background-position: 0% 100%;
+    background-position: 50% 100%;
   }
 }
 
@@ -373,8 +476,65 @@ body.weather-snow {
   0% {
     background-position: 50% 0%;
   }
+  50% {
+    background-position: 0% 50%;
+  }
   100% {
     background-position: 50% 100%;
+  }
+}
+
+/* падение снежинок */
+
+@keyframes snowFall {
+  0% {
+    transform: translateY(-10vh) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) translateX(20px);
+    opacity: 0;
+  }
+}
+
+/* падение дождя */
+
+@keyframes rainFall {
+  0% {
+    transform: translateY(-10vh);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(110vh);
+    opacity: 0;
+  }
+}
+
+/* пульсация солнца */
+
+@keyframes sunPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* движение облаков */
+
+@keyframes cloudMove {
+  0% {
+    transform: translateX(-20vw);
+  }
+  100% {
+    transform: translateX(120vw);
   }
 }
 

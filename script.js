@@ -11,10 +11,11 @@ const scoreBadge = document.getElementById('scoreBadge');
 const scoreValue = document.getElementById('scoreValue');
 const notifyBtn = document.getElementById('notifyBtn');
 const loader = document.getElementById('loader');
+const effectsRoot = document.getElementById('weather-effects');
 
 let map;
 let marker;
-let lastAdvice = null; // чтобы использовать в уведомлении
+let lastAdvice = null; // для уведомлений
 
 // ---------- Вспомогательные функции ----------
 
@@ -48,7 +49,7 @@ async function getForecastByCoords(lat, lon) {
   return await res.json();
 }
 
-// Поиск координат по названию города (ограничиваем Россией)
+// Поиск координат по названию города (Россия)
 async function getCoordsByCity(city) {
   const url =
     `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
@@ -64,7 +65,6 @@ async function getCoordsByCity(city) {
     throw new Error('Город не найден');
   }
   const place = data.results[0];
-
   const cleanedCity = city.trim();
 
   return {
@@ -74,9 +74,8 @@ async function getCoordsByCity(city) {
   };
 }
 
-// ---------- 2. Логика оценки мойки и погоды ----------
+// ---------- 2. Логика оценки и распознавание погоды ----------
 
-// Считаем "оценку дня" 0–10
 function computeWashScoreFromMeteo(data) {
   const precip = data.hourly.precipitation;
   const temps = data.hourly.temperature_2m;
@@ -90,29 +89,24 @@ function computeWashScoreFromMeteo(data) {
   const maxPrecip = Math.max(...next48Precip);
   const totalPrecip = next48Precip.reduce((s, p) => s + p, 0);
 
-  // базовый балл
   let score = 10;
 
-  // Чем больше осадков суммарно – тем хуже
   if (totalPrecip > 5) score -= 4;
   else if (totalPrecip > 2) score -= 2;
   else if (totalPrecip > 0.5) score -= 1;
 
-  // Если будет сильный дождь/снег
   if (maxPrecip > 2) score -= 3;
   else if (maxPrecip > 1) score -= 2;
 
-  // Сильный плюс после возможного снега – плохо
   if (avgTemp > 2 && maxPrecip > 0.5) {
     score -= 1;
   }
 
-  // Ограничиваем 0–10
   score = Math.max(0, Math.min(10, Math.round(score)));
   return score;
 }
 
-// Определяем "настроение" погоды для фона
+// Определяем "муд" погоды для фона
 function detectWeatherMoodFromMeteo(data) {
   const precip = data.hourly.precipitation.slice(0, 24);
   const temps = data.hourly.temperature_2m.slice(0, 24);
@@ -124,30 +118,16 @@ function detectWeatherMoodFromMeteo(data) {
     precip.reduce((s, p) => s + p, 0) / precip.length;
 
   if (maxPrecip > 1 && avgTemp <= 1) return 'snow';
-  if (maxPrecip > 0.4) return 'rain';
+  if (maxPrecip > 0.6) return 'rain';
   if (avgPrecip > 0.1) return 'cloudy';
   return 'clear';
 }
 
-function applyWeatherTheme(mood) {
-  const body = document.body;
-  body.classList.remove(
-    'weather-clear',
-    'weather-rain',
-    'weather-snow',
-    'weather-cloudy'
-  );
-  body.classList.add(`weather-${mood}`);
-}
-
-// Решаем текст совета
 function decideCarWashAdviceFromMeteo(data) {
   const precip = data.hourly.precipitation;
   const temps = data.hourly.temperature_2m;
 
-  const next24Precip = precip.slice(0, 24);
   const next24Temps = temps.slice(0, 24);
-
   const avgTemp24 =
     next24Temps.reduce((sum, t) => sum + t, 0) / next24Temps.length;
 
@@ -179,7 +159,6 @@ function decideCarWashAdviceFromMeteo(data) {
   return { emoji, text, reason, score };
 }
 
-// Простой прогноз по дням для карточек
 function buildSimpleDailyForecastFromMeteo(data) {
   const times = data.hourly.time;
   const temps = data.hourly.temperature_2m;
@@ -226,7 +205,91 @@ function buildSimpleDailyForecastFromMeteo(data) {
   });
 }
 
-// ---------- 3. Карта (Leaflet) ----------
+// ---------- 3. Эффекты погоды (снежинки, дождь, солнце, облака) ----------
+
+function clearWeatherEffects() {
+  if (effectsRoot) effectsRoot.innerHTML = '';
+}
+
+function createSnowEffects() {
+  if (!effectsRoot) return;
+  clearWeatherEffects();
+  const count = 40;
+  for (let i = 0; i < count; i++) {
+    const span = document.createElement('div');
+    span.className = 'snowflake';
+    span.textContent = '❄';
+    span.style.left = Math.random() * 100 + 'vw';
+    span.style.fontSize = 10 + Math.random() * 10 + 'px';
+    const duration = 6 + Math.random() * 8; // 6–14s
+    const delay = Math.random() * 8;
+    span.style.animationDuration = `${duration}s`;
+    span.style.animationDelay = `${delay}s`;
+    effectsRoot.appendChild(span);
+  }
+}
+
+function createRainEffects() {
+  if (!effectsRoot) return;
+  clearWeatherEffects();
+  const count = 60;
+  for (let i = 0; i < count; i++) {
+    const drop = document.createElement('div');
+    drop.className = 'raindrop';
+    drop.style.left = Math.random() * 100 + 'vw';
+    const duration = 0.8 + Math.random() * 0.7; // 0.8–1.5s
+    const delay = Math.random() * 1.5;
+    drop.style.animationDuration = `${duration}s`;
+    drop.style.animationDelay = `${delay}s`;
+    effectsRoot.appendChild(drop);
+  }
+}
+
+function createClearEffects() {
+  if (!effectsRoot) return;
+  clearWeatherEffects();
+  const sun = document.createElement('div');
+  sun.className = 'sun';
+  effectsRoot.appendChild(sun);
+}
+
+function createCloudyEffects() {
+  if (!effectsRoot) return;
+  clearWeatherEffects();
+  const cloud1 = document.createElement('div');
+  cloud1.className = 'cloud';
+  cloud1.style.top = '8vh';
+  cloud1.style.left = '-20vw';
+  cloud1.style.animationDuration = '30s';
+
+  const cloud2 = document.createElement('div');
+  cloud2.className = 'cloud';
+  cloud2.style.top = '18vh';
+  cloud2.style.left = '-40vw';
+  cloud2.style.opacity = '0.8';
+  cloud2.style.animationDuration = '40s';
+
+  effectsRoot.appendChild(cloud1);
+  effectsRoot.appendChild(cloud2);
+}
+
+function applyWeatherTheme(mood) {
+  const body = document.body;
+  body.classList.remove(
+    'weather-clear',
+    'weather-rain',
+    'weather-snow',
+    'weather-cloudy'
+  );
+  body.classList.add(`weather-${mood}`);
+
+  if (mood === 'snow') createSnowEffects();
+  else if (mood === 'rain') createRainEffects();
+  else if (mood === 'cloudy') createCloudyEffects();
+  else createClearEffects();
+}
+
+// ---------- 4. Карта (Leaflet) ----------
 
 function initMap(lat, lon) {
   if (!map) {
@@ -238,7 +301,6 @@ function initMap(lat, lon) {
 
     marker = L.marker([lat, lon]).addTo(map);
 
-    // Клик по карте — новая точка и перерасчёт
     map.on('click', e => {
       runForecast({
         lat: e.latlng.lat,
@@ -252,7 +314,7 @@ function initMap(lat, lon) {
   }
 }
 
-// ---------- 4. Обновление UI ----------
+// ---------- 5. Обновление UI ----------
 
 function updateScoreUI(score) {
   scoreValue.textContent = score;
@@ -278,7 +340,6 @@ function showForecastCards(simpleForecast) {
   forecastEl.style.display = 'grid';
 }
 
-// Общая функция: получить данные, обновить карту и UI
 async function runForecast({ lat, lon, label, source }) {
   adviceCard.style.display = 'block';
   adviceEmoji.textContent = '⏳';
@@ -323,13 +384,11 @@ async function runForecast({ lat, lon, label, source }) {
   }
 }
 
-// ---------- 5. Обработчики кнопок ----------
+// ---------- 6. Обработчики кнопок ----------
 
-// Кнопка "Проверить"
 checkBtn.addEventListener('click', async () => {
   const city = cityInput.value.trim();
 
-  // Если город введён — используем геокодинг
   if (city) {
     adviceCard.style.display = 'block';
     adviceEmoji.textContent = '🔎';
@@ -346,13 +405,11 @@ checkBtn.addEventListener('click', async () => {
       adviceText.textContent = 'Город не найден';
       adviceReason.textContent = 'Проверьте написание и попробуйте ещё раз.';
       forecastEl.style.display = 'none';
-    } finally {
       hideLoader();
     }
     return;
   }
 
-  // Если города нет — пробуем геолокацию
   if (!navigator.geolocation) {
     alert('Геолокация не поддерживается браузером. Введите город вручную 🙂');
     return;
@@ -382,13 +439,11 @@ checkBtn.addEventListener('click', async () => {
   );
 });
 
-// Кнопка 📍 — принудительно геолокация
 geoBtn.addEventListener('click', () => {
   cityInput.value = '';
   checkBtn.click();
 });
 
-// Уведомления (демо)
 notifyBtn.addEventListener('click', async () => {
   if (!('Notification' in window)) {
     alert('Браузер не поддерживает уведомления.');
@@ -415,7 +470,7 @@ notifyBtn.addEventListener('click', async () => {
   });
 });
 
-// ---------- 6. Регистрация service worker для PWA ----------
+// ---------- 7. Service Worker для PWA ----------
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
