@@ -4,14 +4,22 @@
   <meta charset="UTF-8" />
   <title>Мыть машину сегодня?</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Favicon и иконки -->
+  <link rel="icon" type="image/png" href="icons/favicon-32.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#020617" />
+
   <link rel="stylesheet" href="style.css" />
+
   <!-- Leaflet для карты -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
 </head>
-<body>
+<body class="weather-clear">
   <div class="app">
     <div class="header">
       <div>
@@ -71,6 +79,14 @@
 
     <div class="footer">
       🚗 ЛКМ по карте — выбрать точку. Данные: open-meteo.com / OpenStreetMap.
+    </div>
+  </div>
+
+  <!-- Прелоадер -->
+  <div id="loader" class="loader-overlay">
+    <div class="loader">
+      <div class="loader-spinner"></div>
+      <div class="loader-text">Загружаю погоду…</div>
     </div>
   </div>
 

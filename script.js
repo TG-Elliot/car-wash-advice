@@ -10,10 +10,25 @@ const cityInput = document.getElementById('cityInput');
 const scoreBadge = document.getElementById('scoreBadge');
 const scoreValue = document.getElementById('scoreValue');
 const notifyBtn = document.getElementById('notifyBtn');
+const loader = document.getElementById('loader');
 
 let map;
 let marker;
 let lastAdvice = null; // чтобы использовать в уведомлении
+
+// ---------- Вспомогательные функции ----------
+
+function showLoader(message) {
+  if (!loader) return;
+  const textEl = loader.querySelector('.loader-text');
+  if (textEl && message) textEl.textContent = message;
+  loader.classList.add('visible');
+}
+
+function hideLoader() {
+  if (!loader) return;
+  loader.classList.remove('visible');
+}
 
 // ---------- 1. API: погода и геокодинг (Open-Meteo) ----------
 
@@ -59,7 +74,7 @@ async function getCoordsByCity(city) {
   };
 }
 
-// ---------- 2. Логика оценки мойки ----------
+// ---------- 2. Логика оценки мойки и погоды ----------
 
 // Считаем "оценку дня" 0–10
 function computeWashScoreFromMeteo(data) {
@@ -97,6 +112,34 @@ function computeWashScoreFromMeteo(data) {
   return score;
 }
 
+// Определяем "настроение" погоды для фона
+function detectWeatherMoodFromMeteo(data) {
+  const precip = data.hourly.precipitation.slice(0, 24);
+  const temps = data.hourly.temperature_2m.slice(0, 24);
+
+  const avgTemp =
+    temps.reduce((s, t) => s + t, 0) / temps.length;
+  const maxPrecip = Math.max(...precip);
+  const avgPrecip =
+    precip.reduce((s, p) => s + p, 0) / precip.length;
+
+  if (maxPrecip > 1 && avgTemp <= 1) return 'snow';
+  if (maxPrecip > 0.4) return 'rain';
+  if (avgPrecip > 0.1) return 'cloudy';
+  return 'clear';
+}
+
+function applyWeatherTheme(mood) {
+  const body = document.body;
+  body.classList.remove(
+    'weather-clear',
+    'weather-rain',
+    'weather-snow',
+    'weather-cloudy'
+  );
+  body.classList.add(`weather-${mood}`);
+}
+
 // Решаем текст совета
 function decideCarWashAdviceFromMeteo(data) {
   const precip = data.hourly.precipitation;
@@ -105,7 +148,6 @@ function decideCarWashAdviceFromMeteo(data) {
   const next24Precip = precip.slice(0, 24);
   const next24Temps = temps.slice(0, 24);
 
-  const hasRainOrSnow = next24Precip.some(v => v > 0.2);
   const avgTemp24 =
     next24Temps.reduce((sum, t) => sum + t, 0) / next24Temps.length;
 
@@ -246,11 +288,13 @@ async function runForecast({ lat, lon, label, source }) {
     : 'Считаю, стоит ли мыть машину.';
 
   forecastEl.style.display = 'none';
+  showLoader('Загружаю свежий прогноз…');
 
   try {
     const forecastData = await getForecastByCoords(lat, lon);
     const advice = decideCarWashAdviceFromMeteo(forecastData);
     const simpleForecast = buildSimpleDailyForecastFromMeteo(forecastData);
+    const mood = detectWeatherMoodFromMeteo(forecastData);
 
     adviceEmoji.textContent = advice.emoji;
     adviceText.textContent = advice.text;
@@ -261,6 +305,7 @@ async function runForecast({ lat, lon, label, source }) {
     showForecastCards(simpleForecast);
     updateScoreUI(advice.score);
     initMap(lat, lon);
+    applyWeatherTheme(mood);
 
     lastAdvice = {
       text: advice.text,
@@ -273,6 +318,8 @@ async function runForecast({ lat, lon, label, source }) {
     adviceText.textContent = 'Не удалось получить погоду';
     adviceReason.textContent = 'Попробуйте позже или выберите другую точку.';
     forecastEl.style.display = 'none';
+  } finally {
+    hideLoader();
   }
 }
 
@@ -288,6 +335,7 @@ checkBtn.addEventListener('click', async () => {
     adviceEmoji.textContent = '🔎';
     adviceText.textContent = 'Ищу город...';
     adviceReason.textContent = '';
+    showLoader('Ищу город и прогноз…');
 
     try {
       const { lat, lon, label } = await getCoordsByCity(city);
@@ -298,6 +346,8 @@ checkBtn.addEventListener('click', async () => {
       adviceText.textContent = 'Город не найден';
       adviceReason.textContent = 'Проверьте написание и попробуйте ещё раз.';
       forecastEl.style.display = 'none';
+    } finally {
+      hideLoader();
     }
     return;
   }
@@ -312,6 +362,7 @@ checkBtn.addEventListener('click', async () => {
   adviceEmoji.textContent = '📍';
   adviceText.textContent = 'Получаю вашу геолокацию...';
   adviceReason.textContent = '';
+  showLoader('Получаю геолокацию…');
 
   navigator.geolocation.getCurrentPosition(
     async pos => {
@@ -326,6 +377,7 @@ checkBtn.addEventListener('click', async () => {
       adviceReason.textContent =
         'Разрешите доступ к геолокации или введите город вручную.';
       forecastEl.style.display = 'none';
+      hideLoader();
     }
   );
 });
@@ -358,8 +410,17 @@ notifyBtn.addEventListener('click', async () => {
     return;
   }
 
-  // Простое уведомление сейчас (как демо)
   new Notification('Совет по мойке машины', {
     body: `${lastAdvice.text} (оценка ${lastAdvice.score}/10, локация: ${lastAdvice.label})`,
   });
 });
+
+// ---------- 6. Регистрация service worker для PWA ----------
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('./sw.js')
+      .catch(err => console.error('SW registration failed', err));
+  });
+}

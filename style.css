@@ -4,16 +4,45 @@
   padding: 0;
 }
 
+/* БАЗОВЫЙ ФОН, потом меняем классами weather-* */
+
 body {
   min-height: 100vh;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at top, #1e293b, #020617 60%);
   color: #e5e7eb;
   padding: 16px;
+  transition: background 0.6s ease, background-position 8s linear;
+  background-size: 200% 200%;
 }
+
+/* Солнечно */
+body.weather-clear {
+  background-image: radial-gradient(circle at top, #1d4ed8, #020617 60%);
+  animation: skyMove 20s linear infinite;
+}
+
+/* Облачно */
+body.weather-cloudy {
+  background-image: radial-gradient(circle at top, #4b5563, #020617 60%);
+  animation: skyMove 25s linear infinite;
+}
+
+/* Дождь */
+body.weather-rain {
+  background-image: radial-gradient(circle at top, #0f172a, #020617 60%);
+  animation: rainMove 18s linear infinite;
+}
+
+/* Снег */
+body.weather-snow {
+  background-image: radial-gradient(circle at top, #e5e7eb, #111827 60%);
+  animation: snowMove 18s linear infinite;
+}
+
+/* Контейнер приложения */
 
 .app {
   width: 100%;
@@ -46,6 +75,7 @@ body {
 }
 
 /* Оценка 0–10 */
+
 .score-badge {
   display: inline-flex;
   flex-direction: column;
@@ -231,6 +261,52 @@ body {
   color: #6b7280;
 }
 
+/* Прелоадер */
+
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.loader-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.loader {
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: #020617;
+  border: 1px solid #1f2937;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.loader-spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 3px solid #1f2937;
+  border-top-color: #22c55e;
+  animation: spin 0.8s linear infinite;
+}
+
+.loader-text {
+  font-size: 14px;
+  color: #e5e7eb;
+}
+
 /* Анимации */
 
 @keyframes fadeInUp {
@@ -264,6 +340,41 @@ body {
   }
   100% {
     transform: scale(1);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Движение фона */
+
+@keyframes skyMove {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+@keyframes rainMove {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 0% 100%;
+  }
+}
+
+@keyframes snowMove {
+  0% {
+    background-position: 50% 0%;
+  }
+  100% {
+    background-position: 50% 100%;
   }
 }
 
