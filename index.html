@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Мыть машину сегодня?</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Leaflet для карты -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div>
+        <div class="title">Мыть машину сегодня?</div>
+        <div class="subtitle">
+          Смотрю прогноз и подсказываю, стоит ли ехать на мойку.
+        </div>
+      </div>
+      <div class="score-badge" id="scoreBadge" style="opacity:0;">
+        <span class="score-value" id="scoreValue">–</span>
+        <span class="score-label">из 10</span>
+      </div>
+    </div>
+
+    <div class="location-row">
+      <input
+        type="text"
+        class="location-input"
+        id="cityInput"
+        placeholder="Введите город или нажмите 📍"
+      />
+      <button class="btn secondary" id="geoBtn" title="Определить по гео">
+        📍
+      </button>
+    </div>
+
+    <div class="controls-row">
+      <button class="btn" id="checkBtn">Проверить погоду</button>
+      <button class="btn ghost" id="notifyBtn">🔔 Напомнить</button>
+    </div>
+
+    <div class="tip">
+      Можно кликнуть по карте, чтобы выбрать точку и пересчитать совет.
+    </div>
+
+    <div class="advice-card" id="adviceCard" style="display:none;">
+      <div class="advice-main">
+        <div class="advice-emoji" id="adviceEmoji">😎</div>
+        <div>
+          <div class="advice-text" id="adviceText">
+            Отличный день для мойки!
+          </div>
+          <div class="advice-reason" id="adviceReason">
+            Ближайшие 3 дня без осадков, температура около 0°C.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="forecast" id="forecast" style="display:none;">
+      <!-- карточки прогноза будут вставляться скриптом -->
+    </div>
+
+    <div class="map-wrapper">
+      <div id="map" class="map"></div>
+    </div>
+
+    <div class="footer">
+      🚗 ЛКМ по карте — выбрать точку. Данные: open-meteo.com / OpenStreetMap.
+    </div>
+  </div>
+
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Твой скрипт -->
+  <script src="script.js"></script>
+</body>
+</html>
